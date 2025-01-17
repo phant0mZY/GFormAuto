@@ -8,11 +8,17 @@ from selenium.webdriver.support import expected_conditions as EC
 
 form_link = "https://docs.google.com/forms/d/e/1FAIpQLScaDxyT9NQIHh1cVgbTDggl2Dm4iusYEbNGVhLfmG4yvq0bLQ/viewform?usp=header"
 
-def fill_form(browser):
+def fill_form(browser, email):
     wait = WebDriverWait(browser, 10)
 
+    # Fill text fields (assuming the first text field is for email)
+    text_fields = wait.until(EC.presence_of_all_elements_located((By.XPATH, "//input[@type='text']")))
+    if text_fields:
+        text_fields[0].send_keys(email)
+        time.sleep(1)
+    
+    # Select MCQ answers
     mcq_questions = wait.until(EC.presence_of_all_elements_located((By.XPATH, "//div[@role='radiogroup']")))
-
     for question in mcq_questions:
         try:
             options = question.find_elements(By.XPATH, ".//div[@role='radio']")
@@ -21,7 +27,8 @@ def fill_form(browser):
                 time.sleep(1)
         except Exception:
             print("No selectable option found for a question, skipping...")
-
+    
+    # Submit form
     submit_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Submit']")))
     submit_button.click()
     time.sleep(3)
@@ -35,21 +42,24 @@ def fill_form(browser):
 
 def main():
     num_submissions = int(input("Enter the number of times you want to submit the form: "))
-
+    emails = []
+    
+    # Collect unique Gmail addresses from the user
+    for i in range(num_submissions):
+        email = input(f"Enter Gmail address {i+1}: ")
+        emails.append(email)
+    
+    random.shuffle(emails)  # Shuffle the list to ensure randomness
+    
     options = webdriver.ChromeOptions()
     options.add_argument("-incognito")
-
     browser = webdriver.Chrome(options=options)
 
-    for _ in range(num_submissions):
+    for email in emails:
         browser.get(form_link)
         time.sleep(2)
-        fill_form(browser)
-
-        browser.close()
-
-        browser = webdriver.Chrome(options=options)
-
+        fill_form(browser, email)
+    
     browser.quit()
 
 if __name__ == "__main__":
